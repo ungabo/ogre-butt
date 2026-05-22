@@ -9,11 +9,13 @@ import redPimpleUrl from "../../assets/bubbles/pimple-red-angry.png";
 import violetPimpleUrl from "../../assets/bubbles/pimple-violet-blister.png";
 import whitePimpleUrl from "../../assets/bubbles/pimple-whitehead-clean.png";
 import ogreUrl from "../../assets/characters/ogre-clean-cutout-01-soft-shoulder.png";
-import reactionBrowRaiseUrl from "../../assets/characters/reactions/face/ogre-reaction-browRaise-face.png";
-import reactionJoyUrl from "../../assets/characters/reactions/face/ogre-reaction-joy-face.png";
-import reactionStartleUrl from "../../assets/characters/reactions/face/ogre-reaction-startle-face.png";
-import reactionSurpriseUrl from "../../assets/characters/reactions/face/ogre-reaction-surprise-face.png";
-import reactionTickleUrl from "../../assets/characters/reactions/face/ogre-reaction-tickle-face.png";
+import reactionBrowRaiseHeadUrl from "../../assets/characters/reactions/ogre-reaction-browRaise.png";
+import reactionJoyHeadUrl from "../../assets/characters/reactions/ogre-reaction-joy.png";
+import reactionStartleHeadUrl from "../../assets/characters/reactions/ogre-reaction-startle.png";
+import reactionSurpriseHeadUrl from "../../assets/characters/reactions/ogre-reaction-surprise.png";
+import reactionTickleHeadUrl from "../../assets/characters/reactions/ogre-reaction-tickle.png";
+import ogreBodyNoHeadUrl from "../../assets/characters/rig/ogre-body-no-head.png";
+import ogreShoulderOccluderUrl from "../../assets/characters/rig/ogre-shoulder-occluder.png";
 import launcherUrl from "../../assets/props/spray-launcher-cutout-01.png";
 import { BOARD_Z, BUBBLE_RADIUS, SHOOTER_POSITION, SHOT_BOUNDS, SHOT_Z, traceShot } from "../game/board";
 import { colorDef, type BoardSlot, type BubbleColorId, type OgreReactionId, type OgreReactionState, type ShotPlan, type TraceResult, type Vec2, type Vec3 } from "../game/types";
@@ -27,17 +29,28 @@ const PIMPLE_SPRITES: Record<BubbleColorId, string> = {
   orange: orangePimpleUrl,
 };
 
-const REACTION_SPRITES: Record<OgreReactionId, string> = {
-  joy: reactionJoyUrl,
-  surprise: reactionSurpriseUrl,
-  tickle: reactionTickleUrl,
-  startle: reactionStartleUrl,
-  browRaise: reactionBrowRaiseUrl,
+const OGRE_REACTION_HEADS: Record<OgreReactionId, string> = {
+  joy: reactionJoyHeadUrl,
+  surprise: reactionSurpriseHeadUrl,
+  tickle: reactionTickleHeadUrl,
+  startle: reactionStartleHeadUrl,
+  browRaise: reactionBrowRaiseHeadUrl,
 };
 
 const BUMPER_BOTTOM_Y = SHOOTER_POSITION.y - 0.2;
 const BUMPER_WIDTH = 0.14;
 const BUMPER_Z = BOARD_Z - 0.02;
+const OGRE_PLANE_POSITION: [number, number, number] = [0.05, 0.02, -0.62];
+const OGRE_PLANE_SCALE: [number, number, number] = [8.4, 5.6, 1];
+const OGRE_SOURCE_SIZE = { width: 1536, height: 1024 };
+const REACTION_HEAD_ORIGIN = { x: 816, y: -15 };
+const REACTION_HEAD_SIZES: Record<OgreReactionId, { width: number; height: number }> = {
+  joy: { width: 434, height: 525 },
+  surprise: { width: 434, height: 525 },
+  tickle: { width: 435, height: 525 },
+  startle: { width: 434, height: 525 },
+  browRaise: { width: 435, height: 525 },
+};
 const GOO_COLORS = ["#d8ff37", "#fff38a", "#9eff4a", "#e9f45a", "#6fc02b"];
 const PIMPLE_SPRITE_SCALE = 2;
 const PIMPLE_TEXTURE_SIZE = 512;
@@ -49,64 +62,6 @@ const PIMPLE_SOURCE_TRIMS: Record<BubbleColorId, { x: number; y: number; size: n
   teal: { x: 68, y: 60, size: 376 },
   orange: { x: 47, y: 71, size: 330 },
 };
-const REACTION_SPRITE_POSITION: [number, number, number] = [1.5, 1.36, 0.96];
-const REACTION_SPRITE_SCALE: [number, number, number] = [2.38, 2.87, 1];
-const REACTION_FACE_SCALE = 0.62;
-const REACTION_FACE_SOURCE = { x: 2.45, y: 1.92 };
-const REACTION_FACE_TARGET = { x: 1.62, y: 1.48 };
-const EXPRESSION_POSES: Record<
-  OgreReactionId,
-  {
-    head: [number, number, number];
-    headScale: [number, number, number];
-    rotation: number;
-    eyes: "soft" | "wide" | "squint" | "tense" | "raised";
-    mouth: "grin" | "open" | "laugh" | "clench" | "smirk";
-    accent: string;
-  }
-> = {
-  joy: {
-    head: [1.78, 1.33, 0.92],
-    headScale: [0.46, 0.36, 1],
-    rotation: -0.1,
-    eyes: "soft",
-    mouth: "grin",
-    accent: "#fff08a",
-  },
-  surprise: {
-    head: [1.7, 1.4, 0.92],
-    headScale: [0.47, 0.38, 1],
-    rotation: -0.22,
-    eyes: "wide",
-    mouth: "open",
-    accent: "#38e8d1",
-  },
-  tickle: {
-    head: [1.82, 1.31, 0.92],
-    headScale: [0.48, 0.35, 1],
-    rotation: 0.08,
-    eyes: "squint",
-    mouth: "laugh",
-    accent: "#ef3aa2",
-  },
-  startle: {
-    head: [1.68, 1.41, 0.92],
-    headScale: [0.46, 0.38, 1],
-    rotation: -0.28,
-    eyes: "tense",
-    mouth: "clench",
-    accent: "#ff8b20",
-  },
-  browRaise: {
-    head: [1.76, 1.36, 0.92],
-    headScale: [0.46, 0.36, 1],
-    rotation: -0.04,
-    eyes: "raised",
-    mouth: "smirk",
-    accent: "#bff24a",
-  },
-};
-
 interface GameCanvasProps {
   slots: BoardSlot[];
   poppingIds: Set<string>;
@@ -138,8 +93,7 @@ export function GameCanvas({ slots, poppingIds, activeColor, aimTarget, shot, di
       <ResponsiveCamera />
 
       <TexturedPlane url={backgroundUrl} position={[0, 0, -2.3]} scale={[13.45, 7.57, 1]} opacity={1} />
-      <TexturedPlane url={ogreUrl} position={[0.05, 0.02, -0.62]} scale={[8.4, 5.6, 1]} opacity={1} />
-      <OgreReactionOverlay reaction={reaction} />
+      <OgreSprite reaction={reaction} />
       <RaisedBumperRails />
 
       {slots.map((slot) =>
@@ -156,425 +110,37 @@ export function GameCanvas({ slots, poppingIds, activeColor, aimTarget, shot, di
   );
 }
 
-function OgreReactionOverlay({ reaction }: { reaction: OgreReactionState }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const lastTickRef = useRef(reaction.tick);
-  const startedRef = useRef(0);
-  const texture = useLoader(THREE.TextureLoader, REACTION_SPRITES[reaction.id]);
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.anisotropy = 8;
-    texture.needsUpdate = true;
-  }, [texture]);
-
-  useFrame(({ clock }) => {
-    const group = groupRef.current;
-    if (!group) {
-      return;
-    }
-
-    if (lastTickRef.current !== reaction.tick) {
-      lastTickRef.current = reaction.tick;
-      startedRef.current = clock.elapsedTime;
-    }
-
-    const age = reaction.tick === 0 ? 999 : clock.elapsedTime - startedRef.current;
-    const pop = Math.sin(Math.min(age / 0.42, 1) * Math.PI) * 0.035;
-    const jiggle = age < 0.62 ? Math.sin(age * 26) * 0.012 : 0;
-    group.visible = reaction.tick > 0;
-    group.scale.set(REACTION_SPRITE_SCALE[0] * (1 + pop), REACTION_SPRITE_SCALE[1] * (1 + pop), 1);
-    group.rotation.z = jiggle;
-  });
-
+function OgreSprite({ reaction }: { reaction: OgreReactionState }) {
   if (reaction.tick === 0) {
-    return null;
+    return <TexturedPlane url={ogreUrl} position={OGRE_PLANE_POSITION} scale={OGRE_PLANE_SCALE} opacity={1} renderOrder={4} />;
   }
 
-  return (
-    <group ref={groupRef} position={REACTION_SPRITE_POSITION} scale={REACTION_SPRITE_SCALE} renderOrder={28}>
-      <mesh>
-        <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture} transparent alphaTest={0.04} depthTest={false} depthWrite={false} toneMapped={false} />
-      </mesh>
-    </group>
-  );
-}
-
-function FullExpressionOverlay({ id, tick }: { id: OgreReactionId; tick: number }) {
-  const pose = EXPRESSION_POSES[id];
+  const headSize = REACTION_HEAD_SIZES[reaction.id];
+  const headScale = headPlaneScale(headSize);
+  const headPosition = headPlanePosition(headSize);
 
   return (
     <group>
-      <ExpressionShoulders id={id} tick={tick} />
-      <group position={pose.head} rotation={[0, 0, pose.rotation]} scale={pose.headScale}>
-        <Oval position={[0.05, -0.04, 0]} scale={[1.22, 0.96, 1]} color="#1b2a0b" opacity={0.82} renderOrder={31} />
-        <Oval position={[0, 0, 0.02]} scale={[1.06, 0.82, 1]} color="#8cc82c" opacity={0.96} renderOrder={32} />
-        <Oval position={[-0.18, 0.08, 0.03]} scale={[0.78, 0.56, 1]} color="#a4d63d" opacity={0.82} renderOrder={33} />
-        <Oval position={[0.36, -0.02, 0.04]} scale={[0.42, 0.54, 1]} color="#5f971b" opacity={0.5} renderOrder={34} />
-        <ExpressionEyes type={pose.eyes} />
-        <ExpressionMouth type={pose.mouth} />
-        <ExpressionBrow type={pose.eyes} />
-        <Dash position={[-0.62, 0.34, 0.08]} scale={[0.34, 0.055, 1]} rotation={0.42} color={pose.accent} opacity={0.8} />
-        <Dash position={[0.52, 0.3, 0.08]} scale={[0.27, 0.05, 1]} rotation={-0.3} color={pose.accent} opacity={0.72} />
-      </group>
+      <TexturedPlane url={ogreBodyNoHeadUrl} position={OGRE_PLANE_POSITION} scale={OGRE_PLANE_SCALE} opacity={1} renderOrder={4} />
+      <TexturedPlane url={OGRE_REACTION_HEADS[reaction.id]} position={headPosition} scale={headScale} opacity={1} renderOrder={5} />
+      <TexturedPlane url={ogreShoulderOccluderUrl} position={[OGRE_PLANE_POSITION[0], OGRE_PLANE_POSITION[1], -0.54]} scale={OGRE_PLANE_SCALE} opacity={1} renderOrder={6} />
     </group>
   );
 }
 
-function ExpressionShoulders({ id, tick }: { id: OgreReactionId; tick: number }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const lastTickRef = useRef(tick);
-  const startedRef = useRef(0);
-  const accent = EXPRESSION_POSES[id].accent;
+function headPlanePosition(headSize: { width: number; height: number }): [number, number, number] {
+  const centerX = REACTION_HEAD_ORIGIN.x + headSize.width / 2;
+  const centerY = REACTION_HEAD_ORIGIN.y + headSize.height / 2;
 
-  useFrame(({ clock }) => {
-    const group = groupRef.current;
-    if (!group) {
-      return;
-    }
-
-    if (lastTickRef.current !== tick) {
-      lastTickRef.current = tick;
-      startedRef.current = clock.elapsedTime;
-    }
-
-    const age = clock.elapsedTime - startedRef.current;
-    group.visible = age < 1.3 || tick === 1;
-    group.scale.setScalar(1 + Math.sin(Math.min(age / 0.5, 1) * Math.PI) * 0.035);
-  });
-
-  return (
-    <group ref={groupRef}>
-      <Oval position={[1.36, 1.16, 0.86]} scale={[0.88, 0.38, 1]} color="#6fab20" opacity={0.16} renderOrder={24} />
-      <Oval position={[1.54, 1.3, 0.87]} scale={[0.62, 0.32, 1]} color="#98cf35" opacity={0.22} renderOrder={25} />
-      <Dash position={[1.16, 1.42, 0.9]} scale={[0.38, 0.044, 1]} rotation={-0.42} color={accent} opacity={0.55} />
-      <Dash position={[1.48, 1.18, 0.9]} scale={[0.32, 0.04, 1]} rotation={0.35} color={accent} opacity={0.44} />
-      <Dash position={[1.8, 1.05, 0.9]} scale={[0.25, 0.036, 1]} rotation={-0.2} color={accent} opacity={0.34} />
-    </group>
-  );
-}
-
-function ExpressionEyes({ type }: { type: "soft" | "wide" | "squint" | "tense" | "raised" }) {
-  if (type === "soft") {
-    return (
-      <group>
-        <Dash position={[-0.3, 0.12, 0.09]} scale={[0.3, 0.06, 1]} rotation={0.08} color="#14200a" />
-        <Dash position={[0.24, 0.1, 0.09]} scale={[0.25, 0.055, 1]} rotation={-0.06} color="#14200a" />
-        <Oval position={[-0.22, 0.15, 0.1]} scale={[0.045, 0.03, 1]} color="#fff9df" opacity={0.82} renderOrder={36} />
-      </group>
-    );
-  }
-
-  if (type === "squint" || type === "tense") {
-    const leftRotation = type === "tense" ? -0.24 : 0.16;
-    const rightRotation = type === "tense" ? 0.28 : -0.12;
-    return (
-      <group>
-        <Dash position={[-0.3, 0.12, 0.09]} scale={[0.32, 0.065, 1]} rotation={leftRotation} color="#152109" />
-        <Dash position={[0.24, 0.12, 0.09]} scale={[0.28, 0.06, 1]} rotation={rightRotation} color="#152109" />
-      </group>
-    );
-  }
-
-  if (type === "raised") {
-    return (
-      <group>
-        <Oval position={[-0.28, 0.18, 0.09]} scale={[0.2, 0.16, 1]} color="#fff9df" opacity={0.92} renderOrder={35} />
-        <Oval position={[-0.23, 0.17, 0.1]} scale={[0.075, 0.08, 1]} color="#11140b" renderOrder={36} />
-        <Dash position={[0.24, 0.08, 0.09]} scale={[0.24, 0.055, 1]} rotation={-0.08} color="#14200a" />
-      </group>
-    );
-  }
-
-  const leftScale: [number, number, number] = [0.18, 0.2, 1];
-  const rightScale: [number, number, number] = [0.16, 0.19, 1];
-  const leftY = 0.11;
-  const rightY = 0.09;
-
-  return (
-    <group>
-      <Oval position={[-0.28, leftY, 0.09]} scale={leftScale} color="#fff9df" opacity={0.94} renderOrder={35} />
-      <Oval position={[0.24, rightY, 0.09]} scale={rightScale} color="#fff9df" opacity={0.94} renderOrder={35} />
-      <Oval position={[-0.24, leftY - 0.01, 0.1]} scale={[0.06, 0.075, 1]} color="#11140b" renderOrder={36} />
-      <Oval position={[0.27, rightY - 0.01, 0.1]} scale={[0.055, 0.07, 1]} color="#11140b" renderOrder={36} />
-    </group>
-  );
-}
-
-function ExpressionBrow({ type }: { type: "soft" | "wide" | "squint" | "tense" | "raised" }) {
-  const leftRotation = type === "raised" ? 0.46 : type === "tense" ? -0.36 : -0.12;
-  const rightRotation = type === "raised" ? -0.12 : type === "tense" ? 0.42 : 0.1;
-  const leftY = type === "raised" ? 0.39 : 0.31;
-  const rightY = type === "raised" ? 0.25 : 0.29;
-
-  return (
-    <group>
-      <Dash position={[-0.29, leftY, 0.11]} scale={[0.38, 0.07, 1]} rotation={leftRotation} color="#231b10" />
-      <Dash position={[0.24, rightY, 0.11]} scale={[0.34, 0.065, 1]} rotation={rightRotation} color="#231b10" />
-    </group>
-  );
-}
-
-function ExpressionMouth({ type }: { type: "grin" | "open" | "laugh" | "clench" | "smirk" }) {
-  if (type === "open") {
-    return (
-      <group>
-        <Oval position={[0.16, -0.34, 0.09]} scale={[0.19, 0.22, 1]} color="#171006" renderOrder={35} />
-        <Oval position={[0.18, -0.39, 0.1]} scale={[0.105, 0.052, 1]} color="#ef4f63" renderOrder={36} />
-      </group>
-    );
-  }
-
-  if (type === "clench") {
-    return (
-      <group>
-        <Dash position={[0.14, -0.34, 0.09]} scale={[0.4, 0.11, 1]} rotation={-0.04} color="#2a140d" />
-        <Dash position={[0.14, -0.33, 0.1]} scale={[0.3, 0.036, 1]} rotation={-0.04} color="#fff9df" />
-      </group>
-    );
-  }
-
-  if (type === "laugh") {
-    return (
-      <group>
-        <Oval position={[0.1, -0.34, 0.09]} scale={[0.36, 0.17, 1]} color="#24120d" renderOrder={35} />
-        <Oval position={[0.2, -0.39, 0.1]} scale={[0.16, 0.07, 1]} color="#f26072" renderOrder={36} />
-      </group>
-    );
-  }
-
-  if (type === "smirk") {
-    return <Dash position={[0.12, -0.33, 0.09]} scale={[0.38, 0.06, 1]} rotation={-0.18} color="#24120d" />;
-  }
-
-  return (
-    <group>
-      <Dash position={[0.12, -0.34, 0.09]} scale={[0.42, 0.07, 1]} rotation={-0.05} color="#27140e" />
-      <Dash position={[0.15, -0.37, 0.1]} scale={[0.25, 0.032, 1]} rotation={-0.05} color="#ef4f63" opacity={0.76} />
-    </group>
-  );
-}
-
-function ReactionFace({ id }: { id: OgreReactionId }) {
-  return (
-    <group>
-      <Oval position={facePoint(2.45, 1.92, 0.86)} scale={faceScale(0.82, 0.54)} color="#8cc82c" opacity={0.24} renderOrder={26} />
-      <Oval position={facePoint(2.34, 1.81, 0.87)} scale={faceScale(0.52, 0.32)} color="#6fab20" opacity={0.16} renderOrder={27} />
-      {id === "joy" ? <JoyFace /> : null}
-      {id === "surprise" ? <SurpriseFace /> : null}
-      {id === "tickle" ? <TickleFace /> : null}
-      {id === "startle" ? <StartleFace /> : null}
-    </group>
-  );
-}
-
-function JoyFace() {
-  return (
-    <group>
-      <ArcDots center={facePoint(2.22, 2.06, 0.91)} radius={faceLength(0.16)} start={0.18 * Math.PI} end={0.86 * Math.PI} color="#152109" size={faceLength(0.03)} />
-      <ArcDots center={facePoint(2.57, 2.01, 0.91)} radius={faceLength(0.13)} start={0.16 * Math.PI} end={0.86 * Math.PI} color="#152109" size={faceLength(0.026)} />
-      <Oval position={facePoint(2.56, 1.7, 0.91)} scale={faceScale(0.34, 0.18)} color="#27140e" renderOrder={30} />
-      <Oval position={facePoint(2.58, 1.65, 0.92)} scale={faceScale(0.22, 0.08)} color="#ef4f63" renderOrder={31} />
-      <Dash position={facePoint(2.02, 2.26, 0.92)} scale={faceScale(0.2, 0.035)} rotation={0.42} color="#fff08a" />
-      <Dash position={facePoint(2.84, 2.17, 0.92)} scale={faceScale(0.2, 0.035)} rotation={-0.38} color="#fff08a" />
-    </group>
-  );
-}
-
-function SurpriseFace() {
-  return (
-    <group>
-      <Oval position={facePoint(2.2, 2.07, 0.91)} scale={faceScale(0.18, 0.21)} color="#fff9df" renderOrder={30} />
-      <Oval position={facePoint(2.2, 2.06, 0.92)} scale={faceScale(0.07, 0.09)} color="#11140b" renderOrder={31} />
-      <Oval position={facePoint(2.56, 2.02, 0.91)} scale={faceScale(0.16, 0.19)} color="#fff9df" renderOrder={30} />
-      <Oval position={facePoint(2.56, 2.01, 0.92)} scale={faceScale(0.06, 0.08)} color="#11140b" renderOrder={31} />
-      <Oval position={facePoint(2.49, 1.66, 0.91)} scale={faceScale(0.2, 0.24)} color="#171006" renderOrder={30} />
-      <Dash position={facePoint(2.16, 2.29, 0.92)} scale={faceScale(0.24, 0.04)} rotation={0.22} color="#231b10" />
-      <Dash position={facePoint(2.6, 2.22, 0.92)} scale={faceScale(0.22, 0.04)} rotation={-0.28} color="#231b10" />
-    </group>
-  );
-}
-
-function TickleFace() {
-  return (
-    <group>
-      <ArcDots center={facePoint(2.2, 2.05, 0.91)} radius={faceLength(0.15)} start={1.14 * Math.PI} end={1.84 * Math.PI} color="#152109" size={faceLength(0.028)} />
-      <ArcDots center={facePoint(2.56, 2, 0.91)} radius={faceLength(0.13)} start={1.14 * Math.PI} end={1.84 * Math.PI} color="#152109" size={faceLength(0.025)} />
-      <Oval position={facePoint(2.5, 1.68, 0.91)} scale={faceScale(0.3, 0.14)} color="#22130c" renderOrder={30} />
-      <Oval position={facePoint(2.58, 1.63, 0.92)} scale={faceScale(0.12, 0.18)} color="#f26072" renderOrder={31} />
-      <Oval position={facePoint(2.08, 1.82, 0.91)} scale={faceScale(0.08, 0.045)} color="#ef3aa2" opacity={0.7} renderOrder={31} />
-      <Oval position={facePoint(2.77, 1.76, 0.91)} scale={faceScale(0.07, 0.04)} color="#ef3aa2" opacity={0.7} renderOrder={31} />
-    </group>
-  );
-}
-
-function StartleFace() {
-  return (
-    <group>
-      <Oval position={facePoint(2.19, 2.07, 0.91)} scale={faceScale(0.18, 0.22)} color="#fff9df" renderOrder={30} />
-      <Oval position={facePoint(2.54, 2.02, 0.91)} scale={faceScale(0.16, 0.2)} color="#fff9df" renderOrder={30} />
-      <Ring position={facePoint(2.2, 2.06, 0.92)} scale={faceScale(0.09, 0.09)} color="#1a170e" />
-      <Ring position={facePoint(2.55, 2.01, 0.92)} scale={faceScale(0.08, 0.08)} color="#1a170e" />
-      <Oval position={facePoint(2.5, 1.66, 0.91)} scale={faceScale(0.28, 0.12)} color="#24120d" renderOrder={30} />
-      <Drop position={facePoint(2.86, 1.97, 0.92)} scale={faceScale(0.07, 0.13)} color="#8cfff0" />
-      <Dash position={facePoint(2.08, 2.3, 0.92)} scale={faceScale(0.25, 0.04)} rotation={0.52} color="#231b10" />
-      <Dash position={facePoint(2.62, 2.22, 0.92)} scale={faceScale(0.22, 0.04)} rotation={-0.54} color="#231b10" />
-    </group>
-  );
-}
-
-function facePoint(x: number, y: number, z: number): [number, number, number] {
   return [
-    REACTION_FACE_TARGET.x + (x - REACTION_FACE_SOURCE.x) * REACTION_FACE_SCALE,
-    REACTION_FACE_TARGET.y + (y - REACTION_FACE_SOURCE.y) * REACTION_FACE_SCALE,
-    z,
+    OGRE_PLANE_POSITION[0] + (centerX / OGRE_SOURCE_SIZE.width - 0.5) * OGRE_PLANE_SCALE[0],
+    OGRE_PLANE_POSITION[1] + (0.5 - centerY / OGRE_SOURCE_SIZE.height) * OGRE_PLANE_SCALE[1],
+    -0.58,
   ];
 }
 
-function faceScale(x: number, y: number): [number, number, number] {
-  return [x * REACTION_FACE_SCALE, y * REACTION_FACE_SCALE, 1];
-}
-
-function faceLength(value: number) {
-  return value * REACTION_FACE_SCALE;
-}
-
-function ReactionBackMarks({ id, tick }: { id: OgreReactionId; tick: number }) {
-  const groupRef = useRef<THREE.Group>(null);
-  const lastTickRef = useRef(tick);
-  const startedRef = useRef(0);
-
-  useFrame(({ clock }) => {
-    const group = groupRef.current;
-    if (!group) {
-      return;
-    }
-
-    if (lastTickRef.current !== tick) {
-      lastTickRef.current = tick;
-      startedRef.current = clock.elapsedTime;
-    }
-
-    const age = clock.elapsedTime - startedRef.current;
-    const opacity = age > 1.1 ? 0 : 1 - age / 1.1;
-    group.visible = opacity > 0.02;
-    group.scale.setScalar(1 + Math.sin(Math.min(age / 0.55, 1) * Math.PI) * 0.08);
-  });
-
-  const color = id === "joy" ? "#fff08a" : id === "surprise" ? "#38e8d1" : id === "tickle" ? "#ef3aa2" : "#ff8b20";
-  const marks = [
-    { x: 0.95, y: 1.78, r: 0.72 },
-    { x: 1.28, y: 1.6, r: -0.58 },
-    { x: 1.6, y: 1.42, r: 0.44 },
-    { x: 1.88, y: 1.22, r: -0.32 },
-  ];
-
-  return (
-    <group ref={groupRef}>
-      {marks.map((mark, index) => (
-        <Dash key={`${id}-${index}`} position={[mark.x, mark.y, 0.88]} scale={[0.28 - index * 0.025, 0.04, 1]} rotation={mark.r} color={color} opacity={0.82} />
-      ))}
-    </group>
-  );
-}
-
-function Oval({
-  position,
-  scale,
-  color,
-  opacity = 1,
-  renderOrder = 29,
-}: {
-  position: [number, number, number];
-  scale: [number, number, number];
-  color: string;
-  opacity?: number;
-  renderOrder?: number;
-}) {
-  return (
-    <mesh position={position} scale={scale} renderOrder={renderOrder}>
-      <circleGeometry args={[1, 28]} />
-      <meshBasicMaterial color={color} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
-  );
-}
-
-function Dash({
-  position,
-  scale,
-  rotation,
-  color,
-  opacity = 1,
-}: {
-  position: [number, number, number];
-  scale: [number, number, number];
-  rotation: number;
-  color: string;
-  opacity?: number;
-}) {
-  return (
-    <mesh position={position} rotation={[0, 0, rotation]} scale={scale} renderOrder={33}>
-      <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial color={color} transparent opacity={opacity} depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
-  );
-}
-
-function Ring({ position, scale, color }: { position: [number, number, number]; scale: [number, number, number]; color: string }) {
-  return (
-    <mesh position={position} scale={scale} renderOrder={32}>
-      <ringGeometry args={[0.52, 1, 28]} />
-      <meshBasicMaterial color={color} depthTest={false} depthWrite={false} toneMapped={false} />
-    </mesh>
-  );
-}
-
-function Drop({ position, scale, color }: { position: [number, number, number]; scale: [number, number, number]; color: string }) {
-  return (
-    <group position={position} rotation={[0, 0, -0.22]} scale={scale}>
-      <mesh position={[0, -0.2, 0]} renderOrder={33}>
-        <circleGeometry args={[1, 18]} />
-        <meshBasicMaterial color={color} transparent opacity={0.86} depthTest={false} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0.62, 0]} rotation={[0, 0, Math.PI / 4]} scale={[0.74, 0.74, 1]} renderOrder={33}>
-        <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial color={color} transparent opacity={0.86} depthTest={false} depthWrite={false} toneMapped={false} />
-      </mesh>
-    </group>
-  );
-}
-
-function ArcDots({
-  center,
-  radius,
-  start,
-  end,
-  color,
-  size,
-}: {
-  center: [number, number, number];
-  radius: number;
-  start: number;
-  end: number;
-  color: string;
-  size: number;
-}) {
-  const dots = Array.from({ length: 7 }, (_, index) => start + ((end - start) * index) / 6);
-
-  return (
-    <group>
-      {dots.map((angle, index) => (
-        <Oval
-          key={`${center[0]}-${center[1]}-${index}`}
-          position={[center[0] + Math.cos(angle) * radius, center[1] + Math.sin(angle) * radius, center[2]]}
-          scale={[size, size, 1]}
-          color={color}
-          renderOrder={32}
-        />
-      ))}
-    </group>
-  );
+function headPlaneScale(headSize: { width: number; height: number }): [number, number, number] {
+  return [(headSize.width / OGRE_SOURCE_SIZE.width) * OGRE_PLANE_SCALE[0], (headSize.height / OGRE_SOURCE_SIZE.height) * OGRE_PLANE_SCALE[1], 1];
 }
 
 function RaisedBumperRails() {
@@ -673,9 +239,10 @@ interface PlaneProps {
   position: [number, number, number];
   scale: [number, number, number];
   opacity: number;
+  renderOrder?: number;
 }
 
-function TexturedPlane({ url, position, scale, opacity }: PlaneProps) {
+function TexturedPlane({ url, position, scale, opacity, renderOrder = 0 }: PlaneProps) {
   const texture = useLoader(THREE.TextureLoader, url);
 
   useEffect(() => {
@@ -685,9 +252,9 @@ function TexturedPlane({ url, position, scale, opacity }: PlaneProps) {
   }, [texture]);
 
   return (
-    <mesh position={position} scale={scale}>
+    <mesh position={position} scale={scale} renderOrder={renderOrder}>
       <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial map={texture} transparent={opacity < 1 || texture.source.data} opacity={opacity} toneMapped={false} />
+      <meshBasicMaterial map={texture} transparent={opacity < 1 || texture.source.data} opacity={opacity} depthWrite={false} toneMapped={false} />
     </mesh>
   );
 }
